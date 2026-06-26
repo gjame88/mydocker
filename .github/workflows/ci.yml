@@ -13,7 +13,6 @@ jobs:
 
       - name: Docker 빌드 & 푸시
         run: |
-          # 이미지 이름을 my-nginx-app으로 변경
           IMAGE="jaekukang/my-nginx-app:${{ github.sha }}"
           docker build -f docker/Dockerfile -t $IMAGE .
           echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
@@ -21,10 +20,10 @@ jobs:
 
       - name: 매니페스트 저장소 업데이트
         run: |
-          git clone https://x-access-token:${{ secrets.GIT_MANIFEST_TOKEN }}@github.com/jaekukang/my-app-manifest.git
-          cd my-app-manifest
+          # URL이 myk8s.git으로 수정됨
+          git clone https://x-access-token:${{ secrets.GIT_MANIFEST_TOKEN }}@github.com/jaekukang/myk8s.git
+          cd myk8s
           
-          # deployment.yaml 파일의 이미지 경로를 my-nginx-app으로 수정
           sed -i "s|image:.*|image: jaekukang/my-nginx-app:${{ github.sha }}|g" myk8s/deployment.yaml
           
           git config --global user.name "github-actions"
