@@ -13,6 +13,7 @@ jobs:
 
       - name: Docker 빌드 & 푸시
         run: |
+          # 소스 저장소(mydocker)와 매칭되는 이미지 이름 설정
           IMAGE="jaekukang/my-web-app:${{ github.sha }}"
           docker build -f docker/Dockerfile -t $IMAGE .
           echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
@@ -20,13 +21,17 @@ jobs:
 
       - name: 매니페스트 저장소 업데이트
         run: |
+          # 매니페스트 저장소(myk8s) 클론
           git clone https://x-access-token:${{ secrets.GIT_MANIFEST_TOKEN }}@github.com/jaekukang/my-app-manifest.git
           cd my-app-manifest
           
-          # 경로 수정: k8s/ 가 아니라 myk8s/ 일 가능성이 높습니다.
-          sed -i "s|image: .*|image: jaekukang/my-web-app:${{ github.sha }}|g" myk8s/deployment.yaml
+          # deployment.yaml 파일의 이미지 경로 수정
+          # 'image:' 키를 찾아 그 뒤의 값을 새 이미지 이름으로 교체합니다.
+          sed -i "s|image:.*|image: jaekukang/my-web-app:${{ github.sha }}|g" myk8s/deployment.yaml
           
           git config --global user.name "github-actions"
           git config --global user.email "github-actions@github.com"
           git add myk8s/deployment.yaml
+          
+          # 변경사항이 있을 경우에만 커밋 및 푸시
           git diff --quiet && git diff --staged --quiet || (git commit -m "Update image: ${{ github.sha }}" && git push)
