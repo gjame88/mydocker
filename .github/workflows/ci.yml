@@ -13,22 +13,30 @@ jobs:
 
       - name: Docker 빌드 & 푸시
         run: |
+          # 이미지 태그 생성
           IMAGE="jaekukang/my-nginx-app:${{ github.sha }}"
+          
+          # 도커 빌드
           docker build -f docker/Dockerfile -t $IMAGE .
+          
+          # 도커 허브 로그인 및 푸시
           echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
           docker push $IMAGE
 
       - name: 매니페스트 저장소 업데이트
         run: |
-          # URL이 https://github.com/gjame88/myk8s.git 으로 수정됨
+          # 매니페스트 저장소(myk8s) 클론
           git clone https://x-access-token:${{ secrets.GIT_MANIFEST_TOKEN }}@github.com/gjame88/myk8s.git
           cd myk8s
           
-          # deployment.yaml 파일의 이미지 경로 수정
-          sed -i "s|image:.*|image: jaekukang/my-nginx-app:${{ github.sha }}|g" myk8s/deployment.yaml
+          # deployment.yaml 파일 내 image 항목을 최신 이미지로 교체
+          # (파일이 저장소 루트에 있으므로 경로 수정)
+          sed -i "s|image:.*|image: jaekukang/my-nginx-app:${{ github.sha }}|g" deployment.yaml
           
+          # Git 설정 및 변경사항 커밋/푸시
           git config --global user.name "github-actions"
           git config --global user.email "github-actions@github.com"
-          git add myk8s/deployment.yaml
+          git add deployment.yaml
           
+          # 변경된 경우에만 커밋
           git diff --quiet && git diff --staged --quiet || (git commit -m "Update image: ${{ github.sha }}" && git push)
