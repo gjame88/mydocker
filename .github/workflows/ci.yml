@@ -18,19 +18,15 @@ jobs:
           echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
           docker push $IMAGE
 
-      - name: 매니페스트 저장소 업데이트 (GitOps)
+      - name: 매니페스트 저장소 업데이트
         run: |
-          # 1. 매니페스트 저장소 복제
           git clone https://x-access-token:${{ secrets.GIT_MANIFEST_TOKEN }}@github.com/jaekukang/my-app-manifest.git
           cd my-app-manifest
           
-          # 2. 이미지 태그 업데이트 (이미지 경로를 정확하게 타겟팅)
-          sed -i "s|image: .*|image: jaekukang/my-web-app:${{ github.sha }}|g" k8s/deployment.yaml
+          # 경로 수정: k8s/ 가 아니라 myk8s/ 일 가능성이 높습니다.
+          sed -i "s|image: .*|image: jaekukang/my-web-app:${{ github.sha }}|g" myk8s/deployment.yaml
           
-          # 3. 변경사항 커밋 및 푸시
           git config --global user.name "github-actions"
           git config --global user.email "github-actions@github.com"
-          git add k8s/deployment.yaml
-          
-          # 변경사항이 있을 때만 커밋
+          git add myk8s/deployment.yaml
           git diff --quiet && git diff --staged --quiet || (git commit -m "Update image: ${{ github.sha }}" && git push)
